@@ -8,10 +8,14 @@
 
 */
 
+#include <iostream>
+
 #include "jello.h"
 #include "showCube.h"
 #include "input.h"
 #include "physics.h"
+
+using namespace std;
 
 // camera parameters
 double Theta = pi / 6;
@@ -33,6 +37,8 @@ struct world jello;
 
 int windowWidth, windowHeight;
 
+void init_world();
+
 void myinit()
 {
   glMatrixMode(GL_PROJECTION);
@@ -48,6 +54,8 @@ void myinit()
   glShadeModel(GL_SMOOTH);
   glEnable(GL_POLYGON_SMOOTH);
   glEnable(GL_LINE_SMOOTH);
+
+  init_world();
 
   return; 
 }
@@ -275,3 +283,10 @@ int main (int argc, char ** argv)
   return(0);
 }
 
+void init_world() {
+  string integrator = jello.integrator;
+  if (integrator == "RK4")
+    RK4(&jello);
+  else
+    Euler(&jello);
+}

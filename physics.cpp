@@ -5,8 +5,12 @@
 
 */
 
+#include <iostream>
 #include "jello.h"
 #include "physics.h"
+
+using namespace std;
+
 
 /* Computes acceleration to every control point of the jello cube, 
    which is in state given by 'jello'.
@@ -14,6 +18,16 @@
 void computeAcceleration(struct world * jello, struct point a[8][8][8])
 {
   /* for you to implement ... */
+  cout << jello->integrator << '\n';
+  for (int i = 0; i < 8; ++i) {
+    for (int j = 0; j < 8; ++j) {
+      for (int k = 0; k < 8; ++k) {
+        a[i][j][k].x = 10;
+        a[i][j][k].y = 10.0;
+        a[i][j][k].z = 0.0;
+      }
+    }
+  }
 }
 
 /* performs one step of Euler Integration */
