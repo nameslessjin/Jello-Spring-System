@@ -131,4 +131,10 @@ extern struct world jello;
   (dest).y = (src).y * (scalar);\
   (dest).z = (src).z * (scalar);
 
+#define pCREATE(i,j,k,dest)\
+\
+  (dest).x = (i);\
+  (dest).y = (j);\
+  (dest).z = (k);
+
 #endif

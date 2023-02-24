@@ -11,8 +11,8 @@
 
 using namespace std;
 
-#define gravity 9.8;
-#define r_length 1.0/7.0;
+#define gravity 9.8
+#define r_length 1.0 / 7.0
 
 double get_length(struct point vector) {
   return sqrt(pow(vector.x, 2) + pow(vector.y, 2) + pow(vector.z, 2));
@@ -27,6 +27,10 @@ void normalize(struct point &vector) {
   vector.x /= length;
   vector.y /= length;
   vector.z /= length;
+}
+
+struct point find_v(struct world * jello, struct point p) {
+  return jello->v[0][0][0];
 }
 
 struct point computeHookForce(double kh, struct point p1, struct point p2, double resting_length) {
@@ -46,25 +50,53 @@ struct point computeHookForce(double kh, struct point p1, struct point p2, doubl
   return hook_force;
 }
 
-struct point computeDampingForce(double kd, struct point p1, struct point p2) {
+struct point computeDampingForce(double kd, struct point p1, struct point p2, struct point v1, struct point v2) {
   struct point damping_force;
   
   // L is the vector pointing from B to A
-  struct point L, L_normalized, p1_p2;
+  struct point L, L_normalized, v1_v2;
   pDIFFERENCE(p1, p2, L);
   pCPY(L, L_normalized);
   normalize(L_normalized);
 
   // F = -k_damping * ((v_a - v_b) dot L_normalized) * L_normalized
   double pre = -1 * kd;
-  pDIFFERENCE(p2, p1, p1_p2);
-  pre *= dot(p1_p2, L_normalized);
+  pDIFFERENCE(v1, v2, v1_v2);
+  pre *= dot(v1_v2, L_normalized);
   pMULTIPLY(L_normalized, pre, damping_force);
 
   return damping_force;
 }
 
-void computeStructureForce() {}
+void computeStructureForce(struct world * jello, int x, int y, int z, struct point &F) {
+
+  // compute the structure force at a single point
+  // there are 4 cases
+  // first, the very corner case, there are only 8 of theses cases, p only has 3 connections
+  // second, the edge case, where the point has 4 connections
+  // third, the face case, where the point has 5 connections
+  // fourth, the center case, where the point has 6 connections
+
+  struct point p, left, right, top, down, front, back, struct_force, damp_force;
+  pCPY(jello->p[x][y][z], p);
+  
+  // pCREATE(p.x + 1, p.y, p.z, right);
+  // pCREATE(p.x, p.y + 1, p.z, top);
+  // pCREATE(p.x, p.y - 1, p.z, down);
+  // pCREATE(p.x, p.y, p.z + 1, front);
+  // pCREATE(p.x, p.y, p.z - 1, back);
+
+
+  if (p.x != 0) {
+    pCPY(jello->p[x-1][y][z], left);
+    struct_force = computeHookForce(jello->kElastic, p, left, r_length);
+    damp_force = computeDampingForce(jello->dElastic, p, left, find_v(jello, p), find_v(jello, left));
+    pSUM(F, struct_force, F);
+    pSUM(F, damp_force, F);
+  }
+
+
+}
 void computeShearForce() {}
 void computeBendForce() {}
 
