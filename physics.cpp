@@ -64,6 +64,10 @@ struct point computeDampingForce(double kd, struct point p1, struct point p2) {
   return damping_force;
 }
 
+void computeStructureForce() {}
+void computeShearForce() {}
+void computeBendForce() {}
+
 /* Computes acceleration to every control point of the jello cube, 
    which is in state given by 'jello'.
    Returns result in array 'a'. */
