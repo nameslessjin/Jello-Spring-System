@@ -11,6 +11,44 @@
 
 using namespace std;
 
+#define gravity 9.8;
+#define r_length 1.0/7.0;
+
+double get_length(struct point vector) {
+  return sqrt(pow(vector.x, 2) + pow(vector.y, 2) + pow(vector.z, 2));
+}
+
+void normalization(struct point &vector) {
+  double length = get_length(vector);
+  vector.x /= length;
+  vector.y /= length;
+  vector.z /= length;
+}
+
+struct point computeHookForce(double kh, struct point p1, struct point p2, double resting_length) {
+
+  struct point hook_force;
+  
+  // L is the vector pointing from B to A
+  struct point L, L_normalized;
+  pDIFFERENCE(p1, p2, L);
+  pCPY(L, L_normalized);
+  normalization(L_normalized);
+
+  // F = -k_hook(|L| - R) * (L/|L|)
+  double pre = -1 * kh * (get_length(L) - resting_length);
+  pMULTIPLY(L_normalized, pre, hook_force);
+
+  return hook_force;
+}
+
+struct point computeDampingForce(double kd, struct point v) {
+  struct point damping_force;
+  
+  
+
+  return damping_force;
+}
 
 /* Computes acceleration to every control point of the jello cube, 
    which is in state given by 'jello'.
@@ -18,13 +56,17 @@ using namespace std;
 void computeAcceleration(struct world * jello, struct point a[8][8][8])
 {
   /* for you to implement ... */
-  cout << jello->integrator << '\n';
+
+  // gravity
   for (int i = 0; i < 8; ++i) {
     for (int j = 0; j < 8; ++j) {
       for (int k = 0; k < 8; ++k) {
-        a[i][j][k].x = 10;
-        a[i][j][k].y = 10.0;
-        a[i][j][k].z = 0.0;
+        a[i][j][k].x = 0;
+        a[i][j][k].y = 0;
+        a[i][j][k].z = 0;
+
+        // Hook for all springs except collision springs
+
       }
     }
   }
@@ -77,11 +119,22 @@ void RK4(struct world * jello)
     for (j=0; j<=7; j++)
       for (k=0; k<=7; k++)
       {
+         // F1p = v * dt
          pMULTIPLY(jello->v[i][j][k],jello->dt,F1p[i][j][k]);
+
+         // F1v = a * dt
          pMULTIPLY(a[i][j][k],jello->dt,F1v[i][j][k]);
+
+         // buffer.p = F1p * 0.5
          pMULTIPLY(F1p[i][j][k],0.5,buffer.p[i][j][k]);
+
+         // buffer.v = F1v * 0.5
          pMULTIPLY(F1v[i][j][k],0.5,buffer.v[i][j][k]);
+
+         // buffer.p = p + buffer.p
          pSUM(jello->p[i][j][k],buffer.p[i][j][k],buffer.p[i][j][k]);
+
+         // buffer.v = v + buffer.v
          pSUM(jello->v[i][j][k],buffer.v[i][j][k],buffer.v[i][j][k]);
       }
 
@@ -93,8 +146,11 @@ void RK4(struct world * jello)
       {
          // F2p = dt * buffer.v;
          pMULTIPLY(buffer.v[i][j][k],jello->dt,F2p[i][j][k]);
+
          // F2v = dt * a(buffer.p,buffer.v);     
          pMULTIPLY(a[i][j][k],jello->dt,F2v[i][j][k]);
+
+
          pMULTIPLY(F2p[i][j][k],0.5,buffer.p[i][j][k]);
          pMULTIPLY(F2v[i][j][k],0.5,buffer.v[i][j][k]);
          pSUM(jello->p[i][j][k],buffer.p[i][j][k],buffer.p[i][j][k]);

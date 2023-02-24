@@ -37,7 +37,7 @@ struct world jello;
 
 int windowWidth, windowHeight;
 
-void init_world();
+void do_animation();
 
 void myinit()
 {
@@ -54,8 +54,6 @@ void myinit()
   glShadeModel(GL_SMOOTH);
   glEnable(GL_POLYGON_SMOOTH);
   glEnable(GL_LINE_SMOOTH);
-
-  init_world();
 
   return; 
 }
@@ -228,6 +226,7 @@ void doIdle()
     // insert code which appropriately performs one step of the cube simulation:
   }
 
+  do_animation();
   glutPostRedisplay();
 }
 
@@ -283,7 +282,7 @@ int main (int argc, char ** argv)
   return(0);
 }
 
-void init_world() {
+void do_animation() {
   string integrator = jello.integrator;
   if (integrator == "RK4")
     RK4(&jello);
