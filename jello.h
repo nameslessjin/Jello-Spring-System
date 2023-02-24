@@ -132,4 +132,3 @@ extern struct world jello;
   (dest).z = (src).z * (scalar);
 
 #endif
-

@@ -18,7 +18,11 @@ double get_length(struct point vector) {
   return sqrt(pow(vector.x, 2) + pow(vector.y, 2) + pow(vector.z, 2));
 }
 
-void normalization(struct point &vector) {
+double dot(struct point vector1, struct point vector2) {
+  return vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
+}
+
+void normalize(struct point &vector) {
   double length = get_length(vector);
   vector.x /= length;
   vector.y /= length;
@@ -29,11 +33,11 @@ struct point computeHookForce(double kh, struct point p1, struct point p2, doubl
 
   struct point hook_force;
   
-  // L is the vector pointing from B to A
+  // L is the vector pointing from p2 to p1
   struct point L, L_normalized;
   pDIFFERENCE(p1, p2, L);
   pCPY(L, L_normalized);
-  normalization(L_normalized);
+  normalize(L_normalized);
 
   // F = -k_hook(|L| - R) * (L/|L|)
   double pre = -1 * kh * (get_length(L) - resting_length);
@@ -42,10 +46,20 @@ struct point computeHookForce(double kh, struct point p1, struct point p2, doubl
   return hook_force;
 }
 
-struct point computeDampingForce(double kd, struct point v) {
+struct point computeDampingForce(double kd, struct point p1, struct point p2) {
   struct point damping_force;
   
-  
+  // L is the vector pointing from B to A
+  struct point L, L_normalized, p1_p2;
+  pDIFFERENCE(p1, p2, L);
+  pCPY(L, L_normalized);
+  normalize(L_normalized);
+
+  // F = -k_damping * ((v_a - v_b) dot L_normalized) * L_normalized
+  double pre = -1 * kd;
+  pDIFFERENCE(p2, p1, p1_p2);
+  pre *= dot(p1_p2, L_normalized);
+  pMULTIPLY(L_normalized, pre, damping_force);
 
   return damping_force;
 }
