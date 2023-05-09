@@ -37,7 +37,7 @@ struct world jello;
 
 int windowWidth, windowHeight;
 
-void do_animation();
+void performAnimation();
 
 void myinit()
 {
@@ -226,7 +226,7 @@ void doIdle()
     // insert code which appropriately performs one step of the cube simulation:
   }
 
-  do_animation();
+  performAnimation();
   glutPostRedisplay();
 }
 
@@ -282,7 +282,7 @@ int main (int argc, char ** argv)
   return(0);
 }
 
-void do_animation() {
+void performAnimation() {
   string integrator = jello.integrator;
   if (integrator == "RK4")
     RK4(&jello);
