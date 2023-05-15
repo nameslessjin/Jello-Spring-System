@@ -14,6 +14,8 @@ using namespace std;
 #define gravity 9.8
 #define r_length 1.0 / 7.0
 
+int countF = 1000;
+
 double getLength(struct point vector)
 {
   return sqrt(pow(vector.x, 2) + pow(vector.y, 2) + pow(vector.z, 2));
@@ -72,8 +74,6 @@ void printPoint(struct point &p) {
   std::cout << "P, " << " x: " << p.x << " y: " << p.y << " z: " << p.z << '\n';
 }
 
-int countF = 10;
-
 struct point computeHookForce(double kh, struct point a, struct point b, double resting_length)
 {
 
@@ -91,11 +91,6 @@ struct point computeHookForce(double kh, struct point a, struct point b, double 
   // F = -k_hook(|L| - R) * (L/|L|)
   double pre = -1 * kh * (getLength(L) - resting_length);
   pMULTIPLY(L_normalized, pre, hook_force);
-
-  if (countF > 0) {
-    countF -= 1;
-    printPoint(hook_force);
-  }
 
   return hook_force;
 }
@@ -131,6 +126,9 @@ void computeStructureForce(struct world *jello, int x, int y, int z, struct poin
   struct point p, hook_force, damp_force;
   pCPY(jello->p[x][y][z], p);
 
+  // if (countF > 0)
+  //   std::cout << "--------x: " << x << " y: " << y << " z: " << z << '\n';
+
   // loop through all neighbors and find valid direct neighbors
   for (int i = x - 1; i <= x + 1; ++i) {
     for (int j = y - 1; j <= y + 1; ++j) {
@@ -143,6 +141,13 @@ void computeStructureForce(struct world *jello, int x, int y, int z, struct poin
           damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
           pSUM(F, hook_force, F);
           pSUM(F, damp_force, F);
+
+          // if (countF > 0) {
+          //   countF -= 1;
+          //   std::cout << "i: " << i << " j: " << j << " k: " << k << '\n';
+          //   printPoint(F);
+          // }
+
         }
 
       }
@@ -211,8 +216,6 @@ void computeBendForce(struct world *jello, int x, int y, int z, struct point &F)
 void computeAcceleration(struct world *jello, struct point a[8][8][8])
 {
   /* for you to implement ... */
-
-  // gravity
   for (int i = 0; i < 8; ++i)
   {
     for (int j = 0; j < 8; ++j)
@@ -227,15 +230,20 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
 
         // compute force for cube itself
         computeStructureForce(jello, i, j, k, force);
-        computeShearForce(jello, i, j, k, force);
-        computeBendForce(jello, i, j, k, force);
+        // computeShearForce(jello, i, j, k, force);
+        // computeBendForce(jello, i, j, k, force);
 
         // printPoint(force);
 
+
         // // calculate acceleration
-        a[i][j][k].x = force.x / jello->mass;
-        a[i][j][k].y = force.y / jello->mass;
-        a[i][j][k].z = force.z / jello->mass;
+        a[i][j][k].x = force.x;
+        a[i][j][k].y = force.y;
+        a[i][j][k].z = force.z;
+
+        printPoint(a[i][j][k]);
+        // std::cout << "mass: " << jello->mass << '\n';
+
       }
     }
   }
