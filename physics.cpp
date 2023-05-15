@@ -14,7 +14,7 @@ using namespace std;
 #define gravity 9.8
 #define r_length 1.0 / 7.0
 
-double get_length(struct point vector)
+double getLength(struct point vector)
 {
   return sqrt(pow(vector.x, 2) + pow(vector.y, 2) + pow(vector.z, 2));
 }
@@ -26,49 +26,72 @@ double dot(struct point vector1, struct point vector2)
 
 void normalize(struct point &vector)
 {
-  double length = get_length(vector);
+  double length = getLength(vector);
   vector.x /= length;
   vector.y /= length;
   vector.z /= length;
 }
 
-struct point find_v(struct world *jello, struct point p)
+struct point find_v(struct world *jello, int x, int y, int z)
 {
-  return jello->v[0][0][0];
+  return jello->v[x][y][z];
 }
 
-struct point computeHookForce(double kh, struct point p1, struct point p2, double resting_length)
+bool isValidVertex(int x, int y, int z) {
+  if (x < 0 || x > 7 || y < 0 || y > 7 || z < 0 || z > 7) return false;
+  return true;
+}
+
+bool isDirectNeighbor(int x, int y, int z, int x1, int y1, int z1) {
+
+  // if it is not one of the 6 direct neighbors then it is diagonal neighbors
+  // to be a direct neighbors only one if the 3 scalar is different
+  if ((x1 == x + 1 || x1 == x - 1) && y == y1 && z == z1) return true;
+  if ((y1 == y + 1 || y1 == y - 1) && x == x1 && z == z1) return true;
+  if ((z1 == z + 1 || z1 == z - 1) && x == x1 && y == y1) return true;
+
+  return false;
+}
+
+bool isSelf(int x, int y, int z, int x1, int y1, int z1) {
+  return x == x1 && y == y1 && z == z1;
+}
+
+
+struct point computeHookForce(double kh, struct point a, struct point b, double resting_length)
 {
+
+  // Find the elastic force exterted on A
 
   struct point hook_force;
 
-  // L is the vector pointing from p2 to p1
+  // L is the vector pointing from b to a
   struct point L, L_normalized;
-  pDIFFERENCE(p1, p2, L);
+  pDIFFERENCE(a, b, L);
   pCPY(L, L_normalized);
   normalize(L_normalized);
 
   // F = -k_hook(|L| - R) * (L/|L|)
-  double pre = -1 * kh * (get_length(L) - resting_length);
+  double pre = -1 * kh * (getLength(L) - resting_length);
   pMULTIPLY(L_normalized, pre, hook_force);
 
   return hook_force;
 }
 
-struct point computeDampingForce(double kd, struct point p1, struct point p2, struct point v1, struct point v2)
+struct point computeDampingForce(double kd, struct point a, struct point b, struct point va, struct point vb)
 {
   struct point damping_force;
 
   // L is the vector pointing from B to A
-  struct point L, L_normalized, v1_v2;
-  pDIFFERENCE(p1, p2, L);
+  struct point L, L_normalized, va_vb;
+  pDIFFERENCE(a, b, L);
   pCPY(L, L_normalized);
   normalize(L_normalized);
 
   // F = -k_damping * ((v_a - v_b) dot L_normalized) * L_normalized
   double pre = -1 * kd;
-  pDIFFERENCE(v1, v2, v1_v2);
-  pre *= dot(v1_v2, L_normalized);
+  pDIFFERENCE(va, vb, va_vb);
+  pre *= dot(va_vb, L_normalized);
   pMULTIPLY(L_normalized, pre, damping_force);
 
   return damping_force;
@@ -84,26 +107,60 @@ void computeStructureForce(struct world *jello, int x, int y, int z, struct poin
   // third, the face case, where the point has 5 connections
   // fourth, the center case, where the point has 6 connections
 
-  struct point p, left, right, top, down, front, back, struct_force, damp_force;
+  struct point p, struct_force, damp_force;
   pCPY(jello->p[x][y][z], p);
 
-  // pCREATE(p.x + 1, p.y, p.z, right);
-  // pCREATE(p.x, p.y + 1, p.z, top);
-  // pCREATE(p.x, p.y - 1, p.z, down);
-  // pCREATE(p.x, p.y, p.z + 1, front);
-  // pCREATE(p.x, p.y, p.z - 1, back);
+  // loop through all neighbors and find valid direct neighbors
+  for (int i = x - 1; i <= x + 1; ++i) {
+    for (int j = y - 1; j <= y + 1; ++j) {
+      for (int k = z - 1; k <= z + 1; ++k) {
+        
+        if (isValidVertex(i, j, k) && isDirectNeighbor(x, y, z, i, j, k) && !isSelf(x, y, z, i, j, k)) {
+          struct point tmp;
+          pCPY(jello->p[i][j][k], tmp);
+          struct_force = computeHookForce(jello->kElastic, p, tmp, r_length);
+          damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
+          pSUM(F, struct_force, F);
+          pSUM(F, damp_force, F);
+        }
 
-  if (p.x != 0)
-  {
-    pCPY(jello->p[x - 1][y][z], left);
-    struct_force = computeHookForce(jello->kElastic, p, left, r_length);
-    damp_force = computeDampingForce(jello->dElastic, p, left, find_v(jello, p), find_v(jello, left));
-    pSUM(F, struct_force, F);
-    pSUM(F, damp_force, F);
+      }
+    }
   }
 }
-void computeShearForce() {}
-void computeBendForce() {}
+
+
+void computeShearForce(struct world *jello, int x, int y, int z, struct point &F) {
+
+  // compute the shear force at a single point
+  // there are 4 cases
+  // first, the very corner case, there are only 8 of theses cases, p only has 4 connections
+  // second, the edge case, where the point has 7 connections
+  // third, the face case, where the point has 12 connections
+  // fourth, the center case, where the point has 20 connections
+
+  struct point p, struct_force, damp_force;
+  pCPY(jello->p[x][y][z], p);
+
+  // loop through all neighbors and find valid indirect neighbors
+  for (int i = x - 1; i <= x + 1; ++i) {
+    for (int j = y - 1; j <= y + 1; ++j) {
+      for (int k = z - 1; k <= z + 1; ++k) {
+        
+        if (isValidVertex(i, j, k) && !isSelf(x, y, z, i, j, k) && !isDirectNeighbor(x, y, z, i, j, k)) {
+          struct point tmp;
+          pCPY(jello->p[i][j][k], tmp);
+          struct_force = computeHookForce(jello->kElastic, p, tmp, r_length);
+          damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
+          pSUM(F, struct_force, F);
+          pSUM(F, damp_force, F);
+        }
+      }
+    }
+  }
+}
+
+void computeBendForce(struct world *jello, int x, int y, int z, struct point &F) {}
 
 /* Computes acceleration to every control point of the jello cube,
    which is in state given by 'jello'.
@@ -122,6 +179,9 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
         a[i][j][k].x = 0;
         a[i][j][k].y = 0;
         a[i][j][k].z = 0;
+
+        struct point force;
+        computeStructureForce(jello, i, j, k, force);
 
         // Hook for all springs except collision springs
       }
