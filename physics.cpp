@@ -45,10 +45,21 @@ bool isValidVertex(int x, int y, int z) {
 bool isDirectNeighbor(int x, int y, int z, int x1, int y1, int z1) {
 
   // if it is not one of the 6 direct neighbors then it is diagonal neighbors
-  // to be a direct neighbors only one if the 3 scalar is different
+  // to be a direct neighbors only one of the 3 scalar is different by 1
   if ((x1 == x + 1 || x1 == x - 1) && y == y1 && z == z1) return true;
   if ((y1 == y + 1 || y1 == y - 1) && x == x1 && z == z1) return true;
   if ((z1 == z + 1 || z1 == z - 1) && x == x1 && y == y1) return true;
+
+  return false;
+}
+
+bool isEveryOtherNode(int x, int y, int z, int x1, int y1, int z1) {
+
+  // if it is not one of the 6 direct every other neighbors then it is false
+  // to be a direct neighbors only one of the 3 scalar is different by 2
+  if ((x1 == x + 2 || x1 == x - 2) && y == y1 && z == z1) return true;
+  if ((y1 == y + 2 || y1 == y - 2) && x == x1 && z == z1) return true;
+  if ((z1 == z + 2 || z1 == z - 2) && x == x1 && y == y1) return true;
 
   return false;
 }
@@ -107,7 +118,7 @@ void computeStructureForce(struct world *jello, int x, int y, int z, struct poin
   // third, the face case, where the point has 5 connections
   // fourth, the center case, where the point has 6 connections
 
-  struct point p, struct_force, damp_force;
+  struct point p, hook_force, damp_force;
   pCPY(jello->p[x][y][z], p);
 
   // loop through all neighbors and find valid direct neighbors
@@ -118,9 +129,9 @@ void computeStructureForce(struct world *jello, int x, int y, int z, struct poin
         if (isValidVertex(i, j, k) && isDirectNeighbor(x, y, z, i, j, k) && !isSelf(x, y, z, i, j, k)) {
           struct point tmp;
           pCPY(jello->p[i][j][k], tmp);
-          struct_force = computeHookForce(jello->kElastic, p, tmp, r_length);
+          hook_force = computeHookForce(jello->kElastic, p, tmp, r_length);
           damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
-          pSUM(F, struct_force, F);
+          pSUM(F, hook_force, F);
           pSUM(F, damp_force, F);
         }
 
@@ -139,7 +150,7 @@ void computeShearForce(struct world *jello, int x, int y, int z, struct point &F
   // third, the face case, where the point has 12 connections
   // fourth, the center case, where the point has 20 connections
 
-  struct point p, struct_force, damp_force;
+  struct point p, hook_force, damp_force;
   pCPY(jello->p[x][y][z], p);
 
   // loop through all neighbors and find valid indirect neighbors
@@ -150,9 +161,9 @@ void computeShearForce(struct world *jello, int x, int y, int z, struct point &F
         if (isValidVertex(i, j, k) && !isSelf(x, y, z, i, j, k) && !isDirectNeighbor(x, y, z, i, j, k)) {
           struct point tmp;
           pCPY(jello->p[i][j][k], tmp);
-          struct_force = computeHookForce(jello->kElastic, p, tmp, r_length);
+          hook_force = computeHookForce(jello->kElastic, p, tmp, r_length);
           damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
-          pSUM(F, struct_force, F);
+          pSUM(F, hook_force, F);
           pSUM(F, damp_force, F);
         }
       }
@@ -160,7 +171,29 @@ void computeShearForce(struct world *jello, int x, int y, int z, struct point &F
   }
 }
 
-void computeBendForce(struct world *jello, int x, int y, int z, struct point &F) {}
+void computeBendForce(struct world *jello, int x, int y, int z, struct point &F) {
+
+  // similar to struct force but this is for every other point and current point
+
+  struct point p, hook_force, damp_force;
+  pCPY(jello->p[x][y][z], p);
+
+  // loop through one beyond neighbors and skip neighbors
+  for (int i = x - 2; i <= x + 2; i += 2) {
+    for (int j = y - 2; j <= y + 2; j += 2) {
+      for (int k = z - 2; k <= z + 2; k += 2) {
+        if (isValidVertex(i, j, k) && !isSelf(x, y, z, i, j, k) && isEveryOtherNode(x, y, z, i, j, k)) {
+          struct point tmp;
+          pCPY(jello->p[i][j][k], tmp);
+          hook_force = computeHookForce(jello->kElastic, p, tmp, r_length);
+          damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
+          pSUM(F, hook_force, F);
+          pSUM(F, damp_force, F);
+        }
+      }
+    }
+  }
+}
 
 /* Computes acceleration to every control point of the jello cube,
    which is in state given by 'jello'.
@@ -181,7 +214,12 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
         a[i][j][k].z = 0;
 
         struct point force;
+
+        // compute force for cube itself
         computeStructureForce(jello, i, j, k, force);
+        computeShearForce(jello, i, j, k, force);
+        computeBendForce(jello, i, j, k, force);
+
 
         // Hook for all springs except collision springs
       }
