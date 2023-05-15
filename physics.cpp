@@ -68,6 +68,11 @@ bool isSelf(int x, int y, int z, int x1, int y1, int z1) {
   return x == x1 && y == y1 && z == z1;
 }
 
+void printPoint(struct point &p) {
+  std::cout << "P, " << " x: " << p.x << " y: " << p.y << " z: " << p.z << '\n';
+}
+
+int countF = 10;
 
 struct point computeHookForce(double kh, struct point a, struct point b, double resting_length)
 {
@@ -82,9 +87,15 @@ struct point computeHookForce(double kh, struct point a, struct point b, double 
   pCPY(L, L_normalized);
   normalize(L_normalized);
 
+
   // F = -k_hook(|L| - R) * (L/|L|)
   double pre = -1 * kh * (getLength(L) - resting_length);
   pMULTIPLY(L_normalized, pre, hook_force);
+
+  if (countF > 0) {
+    countF -= 1;
+    printPoint(hook_force);
+  }
 
   return hook_force;
 }
@@ -104,7 +115,6 @@ struct point computeDampingForce(double kd, struct point a, struct point b, stru
   pDIFFERENCE(va, vb, va_vb);
   pre *= dot(va_vb, L_normalized);
   pMULTIPLY(L_normalized, pre, damping_force);
-
   return damping_force;
 }
 
@@ -220,8 +230,12 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
         computeShearForce(jello, i, j, k, force);
         computeBendForce(jello, i, j, k, force);
 
+        // printPoint(force);
 
-        // Hook for all springs except collision springs
+        // // calculate acceleration
+        a[i][j][k].x = force.x / jello->mass;
+        a[i][j][k].y = force.y / jello->mass;
+        a[i][j][k].z = force.z / jello->mass;
       }
     }
   }
