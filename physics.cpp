@@ -11,204 +11,17 @@
 
 using namespace std;
 
-#define gravity 9.8
-#define r_length 1.0 / 7.0
-
-int countF = 1000;
-
-double getLength(struct point vector)
-{
-  return sqrt(pow(vector.x, 2) + pow(vector.y, 2) + pow(vector.z, 2));
-}
-
-double dot(struct point vector1, struct point vector2)
-{
-  return vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
-}
-
-void normalize(struct point &vector)
-{
-  double length = getLength(vector);
-  vector.x /= length;
-  vector.y /= length;
-  vector.z /= length;
-}
-
-struct point find_v(struct world *jello, int x, int y, int z)
-{
-  return jello->v[x][y][z];
-}
 
 bool isValidVertex(int x, int y, int z) {
   if (x < 0 || x > 7 || y < 0 || y > 7 || z < 0 || z > 7) return false;
   return true;
 }
 
-bool isDirectNeighbor(int x, int y, int z, int x1, int y1, int z1) {
-
-  // if it is not one of the 6 direct neighbors then it is diagonal neighbors
-  // to be a direct neighbors only one of the 3 scalar is different by 1
-  if ((x1 == x + 1 || x1 == x - 1) && y == y1 && z == z1) return true;
-  if ((y1 == y + 1 || y1 == y - 1) && x == x1 && z == z1) return true;
-  if ((z1 == z + 1 || z1 == z - 1) && x == x1 && y == y1) return true;
-
-  return false;
-}
-
-bool isEveryOtherNode(int x, int y, int z, int x1, int y1, int z1) {
-
-  // if it is not one of the 6 direct every other neighbors then it is false
-  // to be a direct neighbors only one of the 3 scalar is different by 2
-  if ((x1 == x + 2 || x1 == x - 2) && y == y1 && z == z1) return true;
-  if ((y1 == y + 2 || y1 == y - 2) && x == x1 && z == z1) return true;
-  if ((z1 == z + 2 || z1 == z - 2) && x == x1 && y == y1) return true;
-
-  return false;
-}
-
-bool isSelf(int x, int y, int z, int x1, int y1, int z1) {
-  return x == x1 && y == y1 && z == z1;
-}
-
 void printPoint(struct point &p) {
   std::cout << "P, " << " x: " << p.x << " y: " << p.y << " z: " << p.z << '\n';
 }
 
-struct point computeHookForce(double kh, struct point a, struct point b, double resting_length)
-{
 
-  // Find the elastic force exterted on A
-
-  struct point hook_force;
-
-  // L is the vector pointing from b to a
-  struct point L, L_normalized;
-  pDIFFERENCE(a, b, L);
-  pCPY(L, L_normalized);
-  normalize(L_normalized);
-
-
-  // F = -k_hook(|L| - R) * (L/|L|)
-  double pre = -1 * kh * (getLength(L) - resting_length);
-  pMULTIPLY(L_normalized, pre, hook_force);
-
-  return hook_force;
-}
-
-struct point computeDampingForce(double kd, struct point a, struct point b, struct point va, struct point vb)
-{
-  struct point damping_force;
-
-  // L is the vector pointing from B to A
-  struct point L, L_normalized, va_vb;
-  pDIFFERENCE(a, b, L);
-  pCPY(L, L_normalized);
-  normalize(L_normalized);
-
-  // F = -k_damping * ((v_a - v_b) dot L_normalized) * L_normalized
-  double pre = -1 * kd;
-  pDIFFERENCE(va, vb, va_vb);
-  pre *= dot(va_vb, L_normalized);
-  pMULTIPLY(L_normalized, pre, damping_force);
-  return damping_force;
-}
-
-void computeStructureForce(struct world *jello, int x, int y, int z, struct point &F)
-{
-
-  // compute the structure force at a single point
-  // there are 4 cases
-  // first, the very corner case, there are only 8 of theses cases, p only has 3 connections
-  // second, the edge case, where the point has 4 connections
-  // third, the face case, where the point has 5 connections
-  // fourth, the center case, where the point has 6 connections
-
-  struct point p, hook_force, damp_force;
-  pCPY(jello->p[x][y][z], p);
-
-  // if (countF > 0)
-  //   std::cout << "--------x: " << x << " y: " << y << " z: " << z << '\n';
-
-  // loop through all neighbors and find valid direct neighbors
-  for (int i = x - 1; i <= x + 1; ++i) {
-    for (int j = y - 1; j <= y + 1; ++j) {
-      for (int k = z - 1; k <= z + 1; ++k) {
-        
-        if (isValidVertex(i, j, k) && isDirectNeighbor(x, y, z, i, j, k) && !isSelf(x, y, z, i, j, k)) {
-          struct point tmp;
-          pCPY(jello->p[i][j][k], tmp);
-          hook_force = computeHookForce(jello->kElastic, p, tmp, r_length);
-          damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
-          pSUM(F, hook_force, F);
-          pSUM(F, damp_force, F);
-
-          // if (countF > 0) {
-          //   countF -= 1;
-          //   std::cout << "i: " << i << " j: " << j << " k: " << k << '\n';
-          //   printPoint(F);
-          // }
-
-        }
-
-      }
-    }
-  }
-}
-
-
-void computeShearForce(struct world *jello, int x, int y, int z, struct point &F) {
-
-  // compute the shear force at a single point
-  // there are 4 cases
-  // first, the very corner case, there are only 8 of theses cases, p only has 4 connections
-  // second, the edge case, where the point has 7 connections
-  // third, the face case, where the point has 12 connections
-  // fourth, the center case, where the point has 20 connections
-
-  struct point p, hook_force, damp_force;
-  pCPY(jello->p[x][y][z], p);
-
-  // loop through all neighbors and find valid indirect neighbors
-  for (int i = x - 1; i <= x + 1; ++i) {
-    for (int j = y - 1; j <= y + 1; ++j) {
-      for (int k = z - 1; k <= z + 1; ++k) {
-        
-        if (isValidVertex(i, j, k) && !isSelf(x, y, z, i, j, k) && !isDirectNeighbor(x, y, z, i, j, k)) {
-          struct point tmp;
-          pCPY(jello->p[i][j][k], tmp);
-          hook_force = computeHookForce(jello->kElastic, p, tmp, r_length);
-          damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
-          pSUM(F, hook_force, F);
-          pSUM(F, damp_force, F);
-        }
-      }
-    }
-  }
-}
-
-void computeBendForce(struct world *jello, int x, int y, int z, struct point &F) {
-
-  // similar to struct force but this is for every other point and current point
-
-  struct point p, hook_force, damp_force;
-  pCPY(jello->p[x][y][z], p);
-
-  // loop through one beyond neighbors and skip neighbors
-  for (int i = x - 2; i <= x + 2; i += 2) {
-    for (int j = y - 2; j <= y + 2; j += 2) {
-      for (int k = z - 2; k <= z + 2; k += 2) {
-        if (isValidVertex(i, j, k) && !isSelf(x, y, z, i, j, k) && isEveryOtherNode(x, y, z, i, j, k)) {
-          struct point tmp;
-          pCPY(jello->p[i][j][k], tmp);
-          hook_force = computeHookForce(jello->kElastic, p, tmp, r_length);
-          damp_force = computeDampingForce(jello->dElastic, p, tmp, find_v(jello, x, y, z), find_v(jello, i, j, k));
-          pSUM(F, hook_force, F);
-          pSUM(F, damp_force, F);
-        }
-      }
-    }
-  }
-}
 
 /* Computes acceleration to every control point of the jello cube,
    which is in state given by 'jello'.
@@ -229,7 +42,7 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
         struct point force;
 
         // compute force for cube itself
-        computeStructureForce(jello, i, j, k, force);
+        // computeStructureForce(jello, i, j, k, force);
         // computeShearForce(jello, i, j, k, force);
         // computeBendForce(jello, i, j, k, force);
 
@@ -241,7 +54,6 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
         a[i][j][k].y = force.y;
         a[i][j][k].z = force.z;
 
-        printPoint(a[i][j][k]);
         // std::cout << "mass: " << jello->mass << '\n';
 
       }

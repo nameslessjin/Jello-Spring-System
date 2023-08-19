@@ -224,9 +224,10 @@ void doIdle()
   if (pause == 0)
   {
     // insert code which appropriately performs one step of the cube simulation:
+    performAnimation();
   }
 
-  performAnimation();
+
   glutPostRedisplay();
 }
 
@@ -240,6 +241,9 @@ int main (int argc, char ** argv)
   }
 
   readWorld(argv[1],&jello);
+
+  vector<spring> structureSprings, shearSprings, bendSprings;
+  
 
   glutInit(&argc,argv);
   

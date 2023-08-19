@@ -60,6 +60,21 @@ struct world
 
 extern struct world jello;
 
+struct pointIndex {
+  int i, j, k;
+
+  pointIndex(int ii = 0, int jj = 0, int kk = 0)
+    : i(ii), j(jj), k(kk){}
+};
+
+struct spring
+{
+  pointIndex p1, p2;
+  double res_len;
+  spring(const pointIndex& pp1, const pointIndex& pp2, double r)
+    : p1(pp1), p2(pp2), res_len(r) {}
+};
+
 // computes crossproduct of three vectors, which are given as points
 // struct point vector1, vector2, dest
 // result goes into dest
@@ -76,6 +91,20 @@ extern struct world jello;
   x = (y1) * (z2) - (y2) * (z1);\
   y = (x2) * (z1) - (x1) * (z2);\
   z = (x1) * (y2) - (x2) * (y1)
+
+// computes dotproduct of three vectors, which are given as points
+// struct point vector1, vector2, dest
+// result goes into dest
+#define DOTPRODUCTp(vector1,vector2,dest)\
+  DOTPRODUCT( (vector1).x, (vector1).y, (vector1).z,\
+                (vector2).x, (vector2).y, (vector2).z,\
+                dest)
+
+// computes dotproduct of three vectors, which are specified by floating-point coordinates
+// double x1,y1,z1,x2,y2,z2,x,y,z
+// result goes into x,y,z
+#define DOTPRODUCT(x1,y1,z1,x2,y2,z2,dest)\
+  dest = x1 * x2 + y1 * y2 + z1 * z2
 
 // normalizes vector dest
 // struct point dest
