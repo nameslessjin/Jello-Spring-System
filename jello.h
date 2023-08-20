@@ -96,6 +96,27 @@ struct spring
     : p1(pp1), p2(pp2), res_len(r) {}
 };
 
+// struct plane
+// {
+//   // a plane can be defined as ax + by + cz + d = 0
+//   double a, b, c, d;
+//   plane(): a(0.0f), b(0.0f), c(0.0f), d(0.0f){};
+//   plane(double aa, double bb, double cc, double dd): a(aa), b(bb), c(cc), d(dd) {};
+//   plane(point p1, point p2, point p3) 
+//   {
+//     // we can also create a plane with 3 points
+//     point v1, v2, n;
+//     pDIFFERENCE(p3, p2, v1);
+//     pDIFFERENCE(p1, p2, v2);
+
+//   }
+// }
+
+struct bbox
+{
+  
+};
+
 // computes crossproduct of three vectors, which are given as points
 // struct point vector1, vector2, dest
 // result goes into dest
