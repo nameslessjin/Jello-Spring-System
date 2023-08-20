@@ -53,6 +53,35 @@ void computeDampingForce(const struct point& p1, const struct point& p2, const s
   pMULTIPLY(l, -k * veclocity, f);
 }
 
+void computeAcceleration(struct world *jello, struct point a[8][8][8], vector<spring>& springs)
+{
+  
+  double invM = 1.0f / jello->mass;
+
+  for (const spring& s: springs) {
+
+    point elasticForce, dampingForce;
+
+    computeElasticForce(jello->p[s.p1.i][s.p1.j][s.p1.k], jello->p[s.p2.i][s.p2.j][s.p2.k], jello->kElastic, s.res_len, elasticForce);
+    computeDampingForce(jello->p[s.p1.i][s.p1.j][s.p1.k], jello->p[s.p2.i][s.p2.j][s.p2.k], 
+                        jello->v[s.p1.i][s.p1.j][s.p1.k], jello->v[s.p2.i][s.p2.j][s.p2.k], jello->dElastic, dampingForce);
+
+    point totalForce = elasticForce + dampingForce;
+
+    // a = F/m
+    pMULTIPLY(totalForce, invM, totalForce);
+
+    // apply to p1
+    pSUM(a[s.p1.i][s.p1.j][s.p1.k], totalForce, a[s.p1.i][s.p1.j][s.p1.k]);
+
+    // apply to p2, on equal but negative direction force
+    pMULTIPLY(totalForce, -1, totalForce);
+    pSUM(a[s.p2.i][s.p2.j][s.p2.k], totalForce, a[s.p2.i][s.p2.j][s.p2.k]);
+  }
+
+
+}
+
 
 /* Computes acceleration to every control point of the jello cube,
    which is in state given by 'jello'.
@@ -66,13 +95,16 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
     {
       for (int k = 0; k < 8; ++k)
       {
-        a[i][j][k].x = 0;
-        a[i][j][k].y = 0;
-        a[i][j][k].z = 0;
-
+        pMAKE(0, 0, 0, a[i][j][k]);
       }
     }
   }
+
+  computeAcceleration(jello, a, *jello->structureSprings);
+  computeAcceleration(jello, a, *jello->bendSprings);
+  computeAcceleration(jello, a, *jello->shearSprings);
+
+  
 }
 
 /* performs one step of Euler Integration */

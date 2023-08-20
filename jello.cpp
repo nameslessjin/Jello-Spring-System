@@ -251,6 +251,9 @@ int main (int argc, char ** argv)
   readWorld(argv[1],&jello);
   
   generateSprings();
+  jello.structureSprings = &structureSprings;
+  jello.shearSprings = &shearSprings;
+  jello.bendSprings = &bendSprings;
 
   glutInit(&argc,argv);
   

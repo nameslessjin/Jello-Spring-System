@@ -15,8 +15,14 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <iostream>
+#include <vector>
 
 #define pi 3.141592653589793238462643383279 
+
+// user defined
+struct spring;
+//
 
 // camera angles
 extern double Theta;
@@ -35,7 +41,19 @@ struct point
    double x;
    double y;
    double z;
+
+  point(double xx = 0.0f, double yy = 0.0f, double zz = 0.0f)
+    : x(xx), y(yy), z(zz) {}
+
+   point operator+(point& p) {
+    return point(x+p.x, y+p.y, z+p.z);
+   }
+
+   void print() {
+    std::cout << "Point(" << x << ", " << y << ", " << z << ")\n";
+   }
 };
+
 
 // these variables control what is displayed on the screen
 extern int shear, bend, structural, pause, viewingMode, saveScreenToFile;
@@ -56,6 +74,9 @@ struct world
   struct point * forceField; // pointer to the array of values of the force field
   struct point p[8][8][8]; // position of the 512 control points
   struct point v[8][8][8]; // velocities of the 512 control points
+  std::vector<spring>* structureSprings;
+  std::vector<spring>* shearSprings;
+  std::vector<spring>* bendSprings;
 };
 
 extern struct world jello;
@@ -129,11 +150,11 @@ struct spring
 // assigns values x,y,z to point vector dest
 // struct point dest
 // double x,y,z
-#define pMAKE(x,y,z,dest)\
+#define pMAKE(xx,yy,zz,dest)\
 \
-  (dest).(x) = (x);\
-  (dest).(y) = (y);\
-  (dest).(z) = (z);
+  (dest).x = (xx);\
+  (dest).y = (yy);\
+  (dest).z = (zz);
 
 // sums points src1 and src2 to dest
 // struct point src1,src2,dest
