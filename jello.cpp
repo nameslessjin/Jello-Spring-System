@@ -37,7 +37,15 @@ struct world jello;
 
 int windowWidth, windowHeight;
 
+// custom global variable and forward declaration:
+
+vector<spring> structureSprings, shearSprings, bendSprings;
+double length = 1.0f / 7;
+
 void performAnimation();
+void generateSprings();
+
+// end of custom global variable nad forward declaration
 
 void myinit()
 {
@@ -241,9 +249,8 @@ int main (int argc, char ** argv)
   }
 
   readWorld(argv[1],&jello);
-
-  vector<spring> structureSprings, shearSprings, bendSprings;
   
+  generateSprings();
 
   glutInit(&argc,argv);
   
@@ -292,4 +299,56 @@ void performAnimation() {
     RK4(&jello);
   else
     Euler(&jello);
+}
+
+bool isValidVertex(int x, int y, int z) {
+  if (x < 0 || x > 7 || y < 0 || y > 7 || z < 0 || z > 7) return false;
+  return true;
+}
+
+void processNeighborSpring(int i, int j, int k, int di, int dj, int dk, vector<spring>& springVec, double scale) {
+  int ip = i + di, jp = j + dj, kp = k + dk;
+
+  if (isValidVertex(ip, jp, kp))
+    springVec.push_back(spring(pointIndex(i, j, k), pointIndex(ip, jp, kp), length * scale));
+}
+
+/**
+ * create springs for structure, sheader and bending
+*/
+void generateSprings() {
+
+  for (int i = 0; i < 8; ++i)
+    for (int j = 0; j < 8; ++j)
+      for (int k = 0; k < 8; ++k)
+        {
+          // structure springs
+          double scale = 1.0f;
+          processNeighborSpring(i, j, k, 1, 0, 0, structureSprings, scale);
+          processNeighborSpring(i, j, k, 0, 1, 0, structureSprings, scale);
+          processNeighborSpring(i, j, k, 0, 0, 1, structureSprings, scale);
+
+          // shear springs
+          scale = std::sqrt(2.0f);
+          processNeighborSpring(i, j, k, 1, 1, 0, shearSprings, scale);
+          processNeighborSpring(i, j, k, -1, 1, 0, shearSprings, scale);
+          processNeighborSpring(i, j, k, 1, 0, 1, shearSprings, scale);
+          processNeighborSpring(i, j, k, -1, 0, 1, shearSprings, scale);
+          processNeighborSpring(i, j, k, 0, 1, 1, shearSprings, scale);
+          processNeighborSpring(i, j, k, 0, -1, 1, shearSprings, scale);
+
+          scale = std::sqrt(3.0f);
+          processNeighborSpring(i, j, k, 1, 1, 1, shearSprings, scale);
+          processNeighborSpring(i, j, k, -1, 1, 1, shearSprings, scale);
+          processNeighborSpring(i, j, k, -1, -1, 1, shearSprings, scale);
+          processNeighborSpring(i, j, k, 1, -1, 1, shearSprings, scale);
+
+          // bending springs
+          scale = 2.0f;
+          processNeighborSpring(i, j, k, 2, 0, 0, bendSprings, scale);
+          processNeighborSpring(i, j, k, 0, 2, 0, bendSprings, scale);
+          processNeighborSpring(i, j, k, 0, 0, 2, bendSprings, scale);
+        }
+
+  // std::cout<< structureSprings.size() << ' ' << shearSprings.size() << ' ' << bendSprings.size() << '\n';
 }

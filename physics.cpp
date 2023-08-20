@@ -12,15 +12,46 @@
 using namespace std;
 
 
-bool isValidVertex(int x, int y, int z) {
-  if (x < 0 || x > 7 || y < 0 || y > 7 || z < 0 || z > 7) return false;
-  return true;
-}
-
 void printPoint(struct point &p) {
   std::cout << "P, " << " x: " << p.x << " y: " << p.y << " z: " << p.z << '\n';
 }
 
+/**
+ * Compute hook elastic force on the spring between two points
+ * @param p1, p2 - The two mass points connected by a spring
+ * @param k      - The hook elastic coef
+ * @param r      - resting length between p1, p2
+ * @param f      - We set it the elastic force
+*/
+void computeElasticForce(const struct point& p1, const struct point& p2, double k, double r, struct point& f)
+{
+
+  // Hook's law: F = -k_h * (|L| - R) * (L/|L|)
+  point l;
+  double length;
+  pDIFFERENCE(p1, p2, l);
+  pNORMALIZE(l);
+  pMULTIPLY(l, -k * (length - r), f);
+}
+
+/**
+ * Compute damping force on the spring between two points
+ * @param p1, p2 - The two mass points connected by a spring
+ * @param v1, v2 - The velocitties of p1 and p2
+ * @param k      - The damping coef
+ * @param f      - We set it the elastic force
+*/
+void computeDampingForce(const struct point& p1, const struct point& p2, const struct point& v1, const struct point& v2, double k, struct point& f)
+{
+  // Damping force: -k_d * (v1 - v2) dot (L/|L|) * (L/|L|)
+  point l, v;
+  double length, veclocity;
+  pDIFFERENCE(p1, p2, l);
+  pNORMALIZE(l);
+  pDIFFERENCE(v1, v2, v);
+  DOTPRODUCTp(v, l, veclocity);
+  pMULTIPLY(l, -k * veclocity, f);
+}
 
 
 /* Computes acceleration to every control point of the jello cube,
@@ -38,23 +69,6 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
         a[i][j][k].x = 0;
         a[i][j][k].y = 0;
         a[i][j][k].z = 0;
-
-        struct point force;
-
-        // compute force for cube itself
-        // computeStructureForce(jello, i, j, k, force);
-        // computeShearForce(jello, i, j, k, force);
-        // computeBendForce(jello, i, j, k, force);
-
-        // printPoint(force);
-
-
-        // // calculate acceleration
-        a[i][j][k].x = force.x;
-        a[i][j][k].y = force.y;
-        a[i][j][k].z = force.z;
-
-        // std::cout << "mass: " << jello->mass << '\n';
 
       }
     }
