@@ -5,11 +5,9 @@
 
 */
 
-#include <iostream>
 #include "jello.h"
 #include "physics.h"
 
-using namespace std;
 
 
 void printPoint(struct point &p) {
@@ -53,7 +51,7 @@ void computeDampingForce(const struct point& p1, const struct point& p2, const s
   pMULTIPLY(l, -k * veclocity, f);
 }
 
-void computeAcceleration(struct world *jello, struct point a[8][8][8], vector<spring>& springs)
+void computeAccelerationSpring(const struct world *jello, struct point a[8][8][8], vector<spring>& springs)
 {
   
   double invM = 1.0f / jello->mass;
@@ -82,11 +80,122 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8], vector<sp
 
 }
 
+void computeAccelerationCollisions(const struct world *jello, struct point a[8][8][8])
+{
+  std::vector<pointIndex> pointInds; // points that collides
+  std::vector<point> collidedPoints; // points on the plane that collided with jello
+  std::vector<collisionSpring> cSprings;
+
+  double invM = 1.0f / jello->mass;
+
+  // check collision and build collision spring
+  if (checkCollision(jello, pointInds, collidedPoints))
+  {
+    for (int i = 0; i < pointInds.size(); ++i)
+      cSprings.push_back(collisionSpring(pointInds[i], collidedPoints[i]));
+  }
+
+  // for every collision spring, compute Elastic and damping force
+  for (const collisionSpring& s: cSprings)
+  {
+    point elasticForce, dampingForce;
+    computeElasticForce(jello->p[s.p1.i][s.p1.j][s.p1.k], s.collidePoint, jello->kCollision, s.res_len, elasticForce);
+    computeDampingForce(jello->p[s.p1.i][s.p1.j][s.p1.k], s.collidePoint, jello->v[s.p1.i][s.p1.j][s.p1.k], {0, 0, 0}, jello->dCollision, dampingForce);
+
+    point totalForce = elasticForce + dampingForce;
+
+    // a = F/m
+    pMULTIPLY(totalForce, invM, totalForce);
+
+    // apply to p1 only
+    pSUM(a[s.p1.i][s.p1.j][s.p1.k], totalForce, a[s.p1.i][s.p1.j][s.p1.k]);
+
+  }
+}
+
+
+inline bool inCube(const point& p, const AABB& aabb)
+{
+  return (aabb.m_min.x <= p.x && p.x <= aabb.m_max.x) 
+  && (aabb.m_min.y <= p.y && p.y <= aabb.m_max.y)
+  && (aabb.m_min.z <= p.z && p.z <= aabb.m_max.z);
+}
+
+inline bool checkPlaneCollision(const point& p, const plane& pl)
+{
+  // check the distance between plane and point
+  double distance = pl.m_a * p.x + pl.m_b * p.y + pl.m_c * p.z + pl.m_d;
+
+  // if distance > 0, positive, distance < 0 negative, distance == 0, on the plane
+  return  distance < 0;
+}
+
+point findClosestPoint(const point& p, const plane& pl)
+{
+  // find distance / normal
+  double distance = pl.m_a * p.x + pl.m_b * p.y + pl.m_c * p.z + pl.m_d;
+  double denominator = std::sqrt(pl.m_a * pl.m_a + pl.m_b * pl.m_b + pl.m_c * pl.m_c);
+  distance /= denominator;
+
+
+  // cloest point Q on the plane to P: Q = P - d * N_unit
+  // - N_unit is the direction, d is the length
+  point cloest;
+  cloest.x = p.x - distance * pl.m_a;
+  cloest.y = p.y - distance * pl.m_b;
+  cloest.z = p.z - distance * pl.m_c;
+
+  return cloest;
+}
+
+bool checkCollision(const struct world *jello, std::vector<pointIndex>& pointInds, std::vector<point>& collidedPoints) 
+{
+  // for every point in the cube check if a point has collided with a boundary
+  for (int i = 0; i < 8; ++i)
+  {
+    for (int j = 0; j < 8; ++j)
+    {
+      for (int k = 0; k < 8; ++k)
+      {
+        point pt = jello->p[i][j][k];
+
+        // if any point is not inside the cube, then there is a collision
+        if (!inCube(pt, *(jello->cube)))
+        {
+          // find the plane that it collides with
+          // store the point index, find its cloest point in the collided plane
+          for (int planeInd = 0; planeInd < 6; ++planeInd)
+          {
+            if (checkPlaneCollision(pt, (jello->cube)->m_plane[planeInd]))
+            {
+              pointInds.push_back(pointIndex(i, j, k));
+              collidedPoints.push_back(findClosestPoint(pt, (jello->cube)->m_plane[planeInd]));
+            }
+          }
+        }
+        
+        // if there is a inclined plane, check collision with inclined plane
+        if (jello->incPlanePresent == 1)
+        {
+          plane incPlane{jello->a, jello->b, jello->c, jello->d};
+          if (checkPlaneCollision(pt, incPlane))
+          {
+            pointInds.push_back({i, j, k});
+            collidedPoints.push_back(findClosestPoint(pt, incPlane));
+          }
+        }
+      }
+    }
+  }
+
+  return pointInds.size() != 0;
+}
+
 
 /* Computes acceleration to every control point of the jello cube,
    which is in state given by 'jello'.
    Returns result in array 'a'. */
-void computeAcceleration(struct world *jello, struct point a[8][8][8])
+void computeAcceleration(const struct world *jello, struct point a[8][8][8])
 {
   /* for you to implement ... */
   for (int i = 0; i < 8; ++i)
@@ -100,9 +209,11 @@ void computeAcceleration(struct world *jello, struct point a[8][8][8])
     }
   }
 
-  computeAcceleration(jello, a, *jello->structureSprings);
-  computeAcceleration(jello, a, *jello->bendSprings);
-  computeAcceleration(jello, a, *jello->shearSprings);
+  computeAccelerationSpring(jello, a, *jello->structureSprings);
+  computeAccelerationSpring(jello, a, *jello->bendSprings);
+  computeAccelerationSpring(jello, a, *jello->shearSprings);
+
+  computeAccelerationCollisions(jello, a);
 
   
 }

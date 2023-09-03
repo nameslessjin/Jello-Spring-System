@@ -11,6 +11,6 @@
 
 void showCube(struct world * jello);
 
-void showBoundingBox();
+void showBoundingBox(AABB& aabb);
 
 #endif

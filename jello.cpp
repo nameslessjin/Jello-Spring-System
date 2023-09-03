@@ -40,6 +40,7 @@ int windowWidth, windowHeight;
 // custom global variable and forward declaration:
 
 vector<spring> structureSprings, shearSprings, bendSprings;
+AABB cube;
 double length = 1.0f / 7;
 
 void performAnimation();
@@ -201,7 +202,8 @@ void display()
   glDisable(GL_LIGHTING);
 
   // show the bounding box
-  showBoundingBox();
+  showBoundingBox(cube);
+  jello.cube = &cube;
  
   glutSwapBuffers();
 }
@@ -354,4 +356,47 @@ void generateSprings() {
         }
 
   // std::cout<< structureSprings.size() << ' ' << shearSprings.size() << ' ' << bendSprings.size() << '\n';
+}
+
+
+plane::plane(const point& p1, const point& p2, const point& p3)
+{
+    // calculate plane coefficient
+    // find the plane normal
+    point v12, v23, n;
+    pDIFFERENCE(p1, p2, v12);
+    pDIFFERENCE(p2, p3, v23);
+    CROSSPRODUCTp(v12, v23, n);
+    pNORMALIZE(n);
+
+    m_a = n.x, m_b = n.y, m_c = n.z;
+
+    // d = -p dot n
+    DOTPRODUCTp(p1, n, m_d);
+    m_d *= -1;    
+}
+
+void AABB::buildAABB(const point& min, const point& max)
+{
+  m_min = min, m_max = max;
+
+  // create corners
+  point topLeftBack = {m_min.x, m_max.y, m_min.z};
+  point topLeftFront = {m_min.x, m_max.y, m_max.z};
+  point topRightBack = {m_max.x, m_max.y, m_min.z};
+  point topRightFront = {m_max.x, m_max.y, m_max.z};
+
+  point bottomLeftBack = {m_min.x, m_min.y, m_min.z};
+  point bottomLeftFront = {m_min.x, m_min.y, m_max.z};
+  point bottomRightBack = {m_max.x, m_min.y, m_min.z};
+  point bottomRightFront = {m_max.x, m_min.y, m_max.z};
+
+  // create planes, we want the normal point to the center of the box
+  m_plane[0] = plane{ topLeftBack, topLeftFront, topRightFront }; // top
+  m_plane[1] = plane{ bottomLeftBack, bottomRightBack, bottomRightFront }; // bottom
+  m_plane[2] = plane{ topLeftBack, bottomLeftBack, bottomLeftFront }; // left;
+  m_plane[3] = plane{ topRightBack, topRightFront, bottomRightFront }; // right;
+  m_plane[4] = plane{ topRightFront, topLeftFront, bottomLeftFront }; // front;
+  m_plane[5] = plane{ topLeftBack, topRightBack, bottomRightBack }; // back;
+
 }

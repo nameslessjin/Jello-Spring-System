@@ -230,60 +230,67 @@ void showCube(struct world * jello)
   glFrontFace(GL_CCW);
 }
 
-void showBoundingBox()
+void showBoundingBox(AABB& aabb)
 {
   int i,j;
+
+  float maxX = 2.0f, minX = -2.0f;
+  float maxY = 2.0f, minY = -2.0f;
+  float maxZ = 2.0f, minZ = -2.0f;
+  point minP = { minX, minY, minZ };
+  point maxP = { maxX, maxY, maxZ };
+  aabb.buildAABB(minP, maxP);
 
   glColor4f(0.6,0.6,0.6,0);
 
   glBegin(GL_LINES);
 
   // front face
-  for(i=-2; i<=2; i++)
+  for(i=minX; i<=maxX; i++)
   {
-    glVertex3f(i,-2,-2);
-    glVertex3f(i,-2,2);
+    glVertex3f(i,minY,minZ);
+    glVertex3f(i,minY,maxZ);
   }
-  for(j=-2; j<=2; j++)
+  for(j=minZ; j<=maxZ; j++)
   {
-    glVertex3f(-2,-2,j);
-    glVertex3f(2,-2,j);
+    glVertex3f(minX,minY,j);
+    glVertex3f(maxX,minY,j);
   }
 
   // back face
-  for(i=-2; i<=2; i++)
+  for(i=minX; i<=maxX; i++)
   {
-    glVertex3f(i,2,-2);
-    glVertex3f(i,2,2);
+    glVertex3f(i,maxY,minZ);
+    glVertex3f(i,maxY,maxZ);
   }
-  for(j=-2; j<=2; j++)
+  for(j=minZ; j<=maxZ; j++)
   {
-    glVertex3f(-2,2,j);
-    glVertex3f(2,2,j);
+    glVertex3f(minX,maxY,j);
+    glVertex3f(maxX,maxY,j);
   }
 
   // left face
-  for(i=-2; i<=2; i++)
+  for(i=minY; i<=maxY; i++)
   {
-    glVertex3f(-2,i,-2);
-    glVertex3f(-2,i,2);
+    glVertex3f(minX,i,minZ);
+    glVertex3f(minX,i,maxZ);
   }
-  for(j=-2; j<=2; j++)
+  for(j=minZ; j<=maxZ; j++)
   {
-    glVertex3f(-2,-2,j);
-    glVertex3f(-2,2,j);
+    glVertex3f(minX,minY,j);
+    glVertex3f(minX,maxY,j);
   }
 
   // right face
-  for(i=-2; i<=2; i++)
+  for(i=minY; i<=maxY; i++)
   {
-    glVertex3f(2,i,-2);
-    glVertex3f(2,i,2);
+    glVertex3f(maxX,i,minZ);
+    glVertex3f(maxX,i,maxZ);
   }
-  for(j=-2; j<=2; j++)
+  for(j=minZ; j<=maxZ; j++)
   {
-    glVertex3f(2,-2,j);
-    glVertex3f(2,2,j);
+    glVertex3f(maxX,minY,j);
+    glVertex3f(maxX,maxY,j);
   }
   
   glEnd();

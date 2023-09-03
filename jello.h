@@ -22,6 +22,7 @@
 
 // user defined
 struct spring;
+struct AABB;
 //
 
 // camera angles
@@ -77,6 +78,7 @@ struct world
   std::vector<spring>* structureSprings;
   std::vector<spring>* shearSprings;
   std::vector<spring>* bendSprings;
+  AABB* cube;
 };
 
 extern struct world jello;
@@ -96,25 +98,38 @@ struct spring
     : p1(pp1), p2(pp2), res_len(r) {}
 };
 
-// struct plane
-// {
-//   // a plane can be defined as ax + by + cz + d = 0
-//   double a, b, c, d;
-//   plane(): a(0.0f), b(0.0f), c(0.0f), d(0.0f){};
-//   plane(double aa, double bb, double cc, double dd): a(aa), b(bb), c(cc), d(dd) {};
-//   plane(point p1, point p2, point p3) 
-//   {
-//     // we can also create a plane with 3 points
-//     point v1, v2, n;
-//     pDIFFERENCE(p3, p2, v1);
-//     pDIFFERENCE(p1, p2, v2);
-
-//   }
-// }
-
-struct bbox
+struct collisionSpring: spring
 {
-  
+  point collidePoint;
+  collisionSpring(const pointIndex& pp1, const point& p): spring(pp1, {0, 0, 0}, 0.0f), collidePoint(p) {};
+};
+
+struct plane
+{
+  // ax + by + cz + d = 0;
+  double m_a, m_b, m_c, m_d;
+
+  plane(): m_a(0), m_b(0), m_c(0), m_d(0){};
+  plane(double a, double b, double c, double d) : m_a(a), m_b(b), m_c(c), m_d(d) {}
+  plane(const point& p1, const point& p2, const point& p3);
+};
+
+struct AABB
+{
+  // axis aligned bounding box with min and max point
+  point m_min;
+  point m_max;
+
+  // the plane used to form AABB
+  plane m_plane[6];
+
+  AABB() : m_min({0, 0, 0}), m_max({0, 0, 0}){};
+  AABB(const point& min, const point& max) {
+    buildAABB(min, max);
+  }
+
+  void buildAABB(const point& min, const point& max);
+
 };
 
 // computes crossproduct of three vectors, which are given as points
