@@ -24,7 +24,9 @@ void computeDampingForce(const struct point& p1, const struct point& p2, const s
 void computeElasticForce(const struct point& p1, const struct point& p2, double k, double r, struct point& f);
 void printPoint(struct point &p);
 
-bool checkCollision(const struct world *jello, std::vector<pointIndex>& pointInds, std::vector<point>& collidedPoints) ;
+bool checkCollision(const struct world *jello, std::vector<pointIndex>& pointInds, std::vector<point>& collidedPoints);
+point computeForce(const struct world *jello, const point& p1, const point& p2, const point& v1, const point& v2, const spring& s);
+inline bool inCube(const point& p, const AABB& aabb);
 
 #endif
 

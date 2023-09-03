@@ -230,67 +230,60 @@ void showCube(struct world * jello)
   glFrontFace(GL_CCW);
 }
 
-void showBoundingBox(AABB& aabb)
+void showBoundingBox(const point& minP, const point& maxP)
 {
   int i,j;
-
-  float maxX = 2.0f, minX = -2.0f;
-  float maxY = 2.0f, minY = -2.0f;
-  float maxZ = 2.0f, minZ = -2.0f;
-  point minP = { minX, minY, minZ };
-  point maxP = { maxX, maxY, maxZ };
-  aabb.buildAABB(minP, maxP);
 
   glColor4f(0.6,0.6,0.6,0);
 
   glBegin(GL_LINES);
 
   // front face
-  for(i=minX; i<=maxX; i++)
+  for(i=minP.x; i<=maxP.x; i++)
   {
-    glVertex3f(i,minY,minZ);
-    glVertex3f(i,minY,maxZ);
+    glVertex3f(i,minP.y,minP.z);
+    glVertex3f(i,minP.y,maxP.z);
   }
-  for(j=minZ; j<=maxZ; j++)
+  for(j=minP.z; j<=maxP.z; j++)
   {
-    glVertex3f(minX,minY,j);
-    glVertex3f(maxX,minY,j);
+    glVertex3f(minP.x,minP.y,j);
+    glVertex3f(maxP.x,minP.y,j);
   }
 
   // back face
-  for(i=minX; i<=maxX; i++)
+  for(i=minP.x; i<=maxP.x; i++)
   {
-    glVertex3f(i,maxY,minZ);
-    glVertex3f(i,maxY,maxZ);
+    glVertex3f(i,maxP.y,minP.z);
+    glVertex3f(i,maxP.y,maxP.z);
   }
-  for(j=minZ; j<=maxZ; j++)
+  for(j=minP.z; j<=maxP.z; j++)
   {
-    glVertex3f(minX,maxY,j);
-    glVertex3f(maxX,maxY,j);
+    glVertex3f(minP.x,maxP.y,j);
+    glVertex3f(maxP.x,maxP.y,j);
   }
 
   // left face
-  for(i=minY; i<=maxY; i++)
+  for(i=minP.y; i<=maxP.y; i++)
   {
-    glVertex3f(minX,i,minZ);
-    glVertex3f(minX,i,maxZ);
+    glVertex3f(minP.x,i,minP.z);
+    glVertex3f(minP.x,i,maxP.z);
   }
-  for(j=minZ; j<=maxZ; j++)
+  for(j=minP.z; j<=maxP.z; j++)
   {
-    glVertex3f(minX,minY,j);
-    glVertex3f(minX,maxY,j);
+    glVertex3f(minP.x,minP.y,j);
+    glVertex3f(minP.x,maxP.y,j);
   }
 
   // right face
-  for(i=minY; i<=maxY; i++)
+  for(i=minP.y; i<=maxP.y; i++)
   {
-    glVertex3f(maxX,i,minZ);
-    glVertex3f(maxX,i,maxZ);
+    glVertex3f(maxP.x,i,minP.z);
+    glVertex3f(maxP.x,i,maxP.z);
   }
-  for(j=minZ; j<=maxZ; j++)
+  for(j=minP.z; j<=maxP.z; j++)
   {
-    glVertex3f(maxX,minY,j);
-    glVertex3f(maxX,maxY,j);
+    glVertex3f(maxP.x,minP.y,j);
+    glVertex3f(maxP.x,maxP.y,j);
   }
   
   glEnd();

@@ -11,6 +11,6 @@
 
 void showCube(struct world * jello);
 
-void showBoundingBox(AABB& aabb);
+void showBoundingBox(const point& minP, const point& maxP);
 
 #endif

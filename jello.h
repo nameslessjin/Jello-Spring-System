@@ -79,6 +79,8 @@ struct world
   std::vector<spring>* shearSprings;
   std::vector<spring>* bendSprings;
   AABB* cube;
+  double invM;
+  point cellSize;
 };
 
 extern struct world jello;
@@ -216,6 +218,12 @@ struct AABB
   (dest).x = (src).x * (scalar);\
   (dest).y = (src).y * (scalar);\
   (dest).z = (src).z * (scalar);
+
+#define pDIVIDE(src1, src2, dest)\
+\
+  (dest).x = (src1).x / (src2).x;\
+  (dest).y = (src1).y / (src2).y;\
+  (dest).z = (src1).z / (src2).z;
 
 #define pCREATE(i,j,k,dest)\
 \

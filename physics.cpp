@@ -51,6 +51,98 @@ void computeDampingForce(const struct point& p1, const struct point& p2, const s
   pMULTIPLY(l, -k * veclocity, f);
 }
 
+point computeForce(const struct world *jello, const point& p1, const point& p2, const point& v1, const point& v2, const spring& s)
+{
+
+  point elasticForce, dampingForce;
+  computeElasticForce(p1, p2, jello->kElastic, s.res_len, elasticForce);
+  computeDampingForce(p1, p2, v1, v2, jello->dElastic, dampingForce);
+
+  point totalForce = elasticForce + dampingForce;
+
+  // a = F/m
+  pMULTIPLY(totalForce, jello->invM, totalForce);
+
+  return totalForce;
+}
+
+inline int findIndex(double pos, double min, double max, int resolution)
+{
+  // (pos - min) / (max - min) tells where we are normalized, (resolution - 1) is range 0 to resolution - 1 index wise
+  int index = floor((pos - min) / (max - min) * (resolution - 1));
+
+  // we don't want the point go outside the cube
+  return index == resolution - 1 ? index - 1 : index;
+}
+
+pointIndex findPointCell(const struct world *jello, const point& p)
+{
+  int x = findIndex(p.x, jello->cube->m_min.x, jello->cube->m_max.x, jello->resolution);
+  int y = findIndex(p.y, jello->cube->m_min.y, jello->cube->m_max.y, jello->resolution);
+  int z = findIndex(p.z, jello->cube->m_min.z, jello->cube->m_max.z, jello->resolution);
+  return pointIndex{x, y, z};
+}
+
+double findCellIndexPosition(int index, double min, double max, int resolution)
+{
+  // 1.0f * index / (resolution - 1) get normalized position * length(max - min) + offset(min)
+  return (min + (max - min) * (1.0f * index / (resolution - 1)));
+}
+
+point computeBarycentricInterpolation(const struct world *jello, const point& p, const pointIndex& index)
+{
+  point barycentricP;
+  double indexCoordX = findCellIndexPosition(index.i, jello->cube->m_min.x, jello->cube->m_max.x, jello->resolution);
+  double indexCoordY = findCellIndexPosition(index.j, jello->cube->m_min.y, jello->cube->m_max.y, jello->resolution);
+  double indexCoordZ = findCellIndexPosition(index.k, jello->cube->m_min.z, jello->cube->m_max.z, jello->resolution);
+  point indexCoords{indexCoordX, indexCoordY, indexCoordZ};
+
+  pDIFFERENCE(p, indexCoords, barycentricP);
+  pDIVIDE(barycentricP, jello->cellSize, barycentricP);
+
+  return barycentricP;
+}
+
+point interpolateForceField(const struct world *jello, const point& p, const pointIndex& index, const point& bary)
+{
+  std::vector<point> forces;
+  point force;
+
+  int resolution = jello->resolution;
+
+  // get neighbor forces
+  for (int i = 0; i < 2; ++i)
+  {
+    for (int j = 0; j < 2; ++j)
+    {
+      for (int k = 0; k < 2; ++k)
+      {
+        int forceIndex = (index.i + i) * resolution * resolution + (index.j + j) * resolution + (index.k + k);
+        forces.push_back(jello->forceField[forceIndex]);
+      }
+    }
+  }
+
+  // interpolate neighbor forces
+  for (int i = 0; i < 2; ++i)
+  {
+    for (int j = 0; j < 2; ++j)
+    {
+      for (int k = 0; k < 2; ++k)
+      {
+        double a, b, c;
+        a = (i == 1) ? bary.x : (1 - bary.x);
+        b = (j == 1) ? bary.y : (1 - bary.y);
+        c = (k == 1) ? bary.z : (1 - bary.z);
+        point t;
+        pMULTIPLY(forces[4 * i + 2 * j + k], a * b * c, t);
+        pSUM(force, t, force);
+      }
+    }
+  }
+  return force;
+}
+
 void computeAccelerationSpring(const struct world *jello, struct point a[8][8][8], vector<spring>& springs)
 {
   
@@ -58,16 +150,12 @@ void computeAccelerationSpring(const struct world *jello, struct point a[8][8][8
 
   for (const spring& s: springs) {
 
-    point elasticForce, dampingForce;
+    const point& p1 = jello->p[s.p1.i][s.p1.j][s.p1.k];
+    const point& p2 = jello->p[s.p2.i][s.p2.j][s.p2.k];
+    const point& v1 = jello->v[s.p1.i][s.p1.j][s.p1.k];
+    const point& v2 = jello->v[s.p2.i][s.p2.j][s.p2.k];
 
-    computeElasticForce(jello->p[s.p1.i][s.p1.j][s.p1.k], jello->p[s.p2.i][s.p2.j][s.p2.k], jello->kElastic, s.res_len, elasticForce);
-    computeDampingForce(jello->p[s.p1.i][s.p1.j][s.p1.k], jello->p[s.p2.i][s.p2.j][s.p2.k], 
-                        jello->v[s.p1.i][s.p1.j][s.p1.k], jello->v[s.p2.i][s.p2.j][s.p2.k], jello->dElastic, dampingForce);
-
-    point totalForce = elasticForce + dampingForce;
-
-    // a = F/m
-    pMULTIPLY(totalForce, invM, totalForce);
+    point totalForce = computeForce(jello, p1, p2, v1, v2, s);
 
     // apply to p1
     pSUM(a[s.p1.i][s.p1.j][s.p1.k], totalForce, a[s.p1.i][s.p1.j][s.p1.k]);
@@ -76,8 +164,6 @@ void computeAccelerationSpring(const struct world *jello, struct point a[8][8][8
     pMULTIPLY(totalForce, -1, totalForce);
     pSUM(a[s.p2.i][s.p2.j][s.p2.k], totalForce, a[s.p2.i][s.p2.j][s.p2.k]);
   }
-
-
 }
 
 void computeAccelerationCollisions(const struct world *jello, struct point a[8][8][8])
@@ -98,18 +184,49 @@ void computeAccelerationCollisions(const struct world *jello, struct point a[8][
   // for every collision spring, compute Elastic and damping force
   for (const collisionSpring& s: cSprings)
   {
-    point elasticForce, dampingForce;
-    computeElasticForce(jello->p[s.p1.i][s.p1.j][s.p1.k], s.collidePoint, jello->kCollision, s.res_len, elasticForce);
-    computeDampingForce(jello->p[s.p1.i][s.p1.j][s.p1.k], s.collidePoint, jello->v[s.p1.i][s.p1.j][s.p1.k], {0, 0, 0}, jello->dCollision, dampingForce);
 
-    point totalForce = elasticForce + dampingForce;
+    const point& p1 = jello->p[s.p1.i][s.p1.j][s.p1.k];
+    const point& p2 = s.collidePoint;
+    const point& v1 = jello->v[s.p1.i][s.p1.j][s.p1.k];
+    const point& v2 = {0, 0, 0};
 
-    // a = F/m
-    pMULTIPLY(totalForce, invM, totalForce);
+    point totalForce = computeForce(jello, p1, p2, v1, v2, s);
 
     // apply to p1 only
     pSUM(a[s.p1.i][s.p1.j][s.p1.k], totalForce, a[s.p1.i][s.p1.j][s.p1.k]);
 
+  }
+}
+
+void computeAccelerationForceField(const struct world *jello, struct point a[8][8][8])
+{
+  // the bounding box is divded into a rectangular grid with points at 
+  // ((-2 + i * 4 / (resolution - 1)), j * 4 / (resolution - 1), -2 + k * 4 / (resolution - 1)), i,j,k = 0, 1, ..., resolution -1
+  // if resolution = 0 or 1, it has no meaning
+  if (jello->resolution < 2) return;
+
+  for (int i = 0; i < 8; ++i)
+  {
+    for (int j = 0; j < 8; ++j)
+    {
+      for (int k = 0; k < 8; ++k)
+      {
+        const point& p = jello->p[i][j][k];
+
+        // if point is outside of cube, stop applying external field force on it
+        if (!inCube(p, *(jello->cube))) continue;
+
+        // put point in a cell
+        pointIndex cellIndex = findPointCell(jello, p);
+
+        // compute barycentric for interpolating force
+        point barycentric = computeBarycentricInterpolation(jello, p, cellIndex);
+
+        point force = interpolateForceField(jello, p, cellIndex, barycentric);
+        pMULTIPLY(force, jello->invM, force);
+        pSUM(a[i][j][k], force, a[i][j][k]);
+      }
+    }
   }
 }
 
@@ -157,7 +274,7 @@ bool checkCollision(const struct world *jello, std::vector<pointIndex>& pointInd
     {
       for (int k = 0; k < 8; ++k)
       {
-        point pt = jello->p[i][j][k];
+        const point& pt = jello->p[i][j][k];
 
         // if any point is not inside the cube, then there is a collision
         if (!inCube(pt, *(jello->cube)))
@@ -215,6 +332,7 @@ void computeAcceleration(const struct world *jello, struct point a[8][8][8])
 
   computeAccelerationCollisions(jello, a);
 
+  computeAccelerationForceField(jello, a);
   
 }
 

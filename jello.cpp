@@ -42,6 +42,11 @@ int windowWidth, windowHeight;
 vector<spring> structureSprings, shearSprings, bendSprings;
 AABB cube;
 double length = 1.0f / 7;
+float maxX = 2.0f, minX = -2.0f;
+float maxY = 2.0f, minY = -2.0f;
+float maxZ = 2.0f, minZ = -2.0f;
+point minP = { minX, minY, minZ };
+point maxP = { maxX, maxY, maxZ };
 
 void performAnimation();
 void generateSprings();
@@ -202,8 +207,7 @@ void display()
   glDisable(GL_LIGHTING);
 
   // show the bounding box
-  showBoundingBox(cube);
-  jello.cube = &cube;
+  showBoundingBox(minP, maxP);
  
   glutSwapBuffers();
 }
@@ -256,6 +260,19 @@ int main (int argc, char ** argv)
   jello.structureSprings = &structureSprings;
   jello.shearSprings = &shearSprings;
   jello.bendSprings = &bendSprings;
+  jello.invM = 1.0f / jello.mass;
+  cube.buildAABB(minP, maxP);
+  jello.cube = &cube;
+
+  // compute cell size for external force field
+  if (jello.resolution >= 2)
+  {
+    double invRes = 1.0f / (jello.resolution - 1);
+    point p;
+    pDIFFERENCE(jello.cube->m_max, jello.cube->m_min, p);
+    pMULTIPLY(p, invRes, p);
+    jello.cellSize = p;
+  }
 
   glutInit(&argc,argv);
   
