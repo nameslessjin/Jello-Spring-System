@@ -73,7 +73,7 @@ void showCube(struct world * jello)
       glVertex3f(jello->p[ip][jp][kp].x,jello->p[ip][jp][kp].y,jello->p[ip][jp][kp].z);\
     }\
 
- 
+  
   if (viewingMode==0) // render wireframe
   {
     glLineWidth(1);
@@ -99,7 +99,7 @@ void showCube(struct world * jello)
           // structural
           if (structural == 1)
           {
-            glColor4f(0,0,1,1);
+            glColor4f(230.0f/color,123.0f/color,34.0/color,1);
             PROCESS_NEIGHBOUR(1,0,0);
             PROCESS_NEIGHBOUR(0,1,0);
             PROCESS_NEIGHBOUR(0,0,1);
@@ -254,15 +254,6 @@ void showBoundingBox(const point& minP, const point& maxP)
   point bottomRightBack = {maxP.x, minP.y, minP.z};
   point bottomRightFront = {maxP.x, minP.y, maxP.z};
 
-  // // create planes, we want the normal point to the center of the box
-  // m_plane[0] = plane{ topLeftBack, topLeftFront, topRightFront }; // top
-  // m_plane[1] = plane{ bottomLeftBack, bottomRightBack, bottomRightFront }; // bottom
-  // m_plane[2] = plane{ topLeftBack, bottomLeftBack, bottomLeftFront }; // left;
-  // m_plane[3] = plane{ topRightBack, topRightFront, bottomRightFront }; // right;
-  // m_plane[4] = plane{ topRightFront, topLeftFront, bottomLeftFront }; // front;
-  // m_plane[5] = plane{ topLeftBack, topRightBack, bottomRightBack }; // back;
-
-  float color = 255.0f; 
   float scale = 0.2f;
   glBegin(GL_QUADS);
 
@@ -295,16 +286,15 @@ void showBoundingBox(const point& minP, const point& maxP)
 
   // green
   glColor4f(46.0f/color, 204.0f/color, 113.0f/color, 1.0f);
-  // front face
-  pointToglVertex(topRightFront);
+  // right face
+  pointToglVertex(topLeftBack);
   pointToglVertex(topRightBack);
-  pointToglVertex(bottomRightBack);
-  pointToglVertex(bottomRightFront);
+  pointToglVertex(topRightFront);
+  pointToglVertex(topLeftFront);
 
 
   // red
   glColor4f(231.0f/color, 76.0f/color, 60.0f/color, 1.0f);
-
   // left face
   pointToglVertex(bottomRightBack);
   pointToglVertex(bottomLeftBack);
@@ -313,11 +303,11 @@ void showBoundingBox(const point& minP, const point& maxP)
 
   // blue
   glColor4f(52.0f/color,152.0f/color,219.0f/color, 1.0f);
-  // right face
-  pointToglVertex(topLeftBack);
-  pointToglVertex(topRightBack);
+  // front face
   pointToglVertex(topRightFront);
-  pointToglVertex(topLeftFront);
+  pointToglVertex(topRightBack);
+  pointToglVertex(bottomRightBack);
+  pointToglVertex(bottomRightFront);
 
   // ceiling light
   // top face

@@ -51,17 +51,17 @@ void computeDampingForce(const struct point& p1, const struct point& p2, const s
   pMULTIPLY(l, -k * veclocity, f);
 }
 
-point computeForce(const struct world *jello, const point& p1, const point& p2, const point& v1, const point& v2, const spring& s)
+point computeForce(double k, double d, double invM, const point& p1, const point& p2, const point& v1, const point& v2, double res_len)
 {
 
   point elasticForce, dampingForce;
-  computeElasticForce(p1, p2, jello->kElastic, s.res_len, elasticForce);
-  computeDampingForce(p1, p2, v1, v2, jello->dElastic, dampingForce);
+  computeElasticForce(p1, p2, k, res_len, elasticForce);
+  computeDampingForce(p1, p2, v1, v2, d, dampingForce);
 
   point totalForce = elasticForce + dampingForce;
 
   // a = F/m
-  pMULTIPLY(totalForce, jello->invM, totalForce);
+  pMULTIPLY(totalForce, invM, totalForce);
 
   return totalForce;
 }
@@ -155,7 +155,7 @@ void computeAccelerationSpring(const struct world *jello, struct point a[8][8][8
     const point& v1 = jello->v[s.p1.i][s.p1.j][s.p1.k];
     const point& v2 = jello->v[s.p2.i][s.p2.j][s.p2.k];
 
-    point totalForce = computeForce(jello, p1, p2, v1, v2, s);
+    point totalForce = computeForce(jello->kElastic, jello->dElastic, jello->invM, p1, p2, v1, v2, s.res_len);
 
     // apply to p1
     pSUM(a[s.p1.i][s.p1.j][s.p1.k], totalForce, a[s.p1.i][s.p1.j][s.p1.k]);
@@ -190,7 +190,7 @@ void computeAccelerationCollisions(const struct world *jello, struct point a[8][
     const point& v1 = jello->v[s.p1.i][s.p1.j][s.p1.k];
     const point& v2 = {0, 0, 0};
 
-    point totalForce = computeForce(jello, p1, p2, v1, v2, s);
+    point totalForce = computeForce(jello->kCollision, jello->dCollision, jello->invM, p1, p2, v1, v2, s.res_len);
 
     // apply to p1 only
     pSUM(a[s.p1.i][s.p1.j][s.p1.k], totalForce, a[s.p1.i][s.p1.j][s.p1.k]);

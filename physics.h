@@ -25,7 +25,7 @@ void computeElasticForce(const struct point& p1, const struct point& p2, double 
 void printPoint(struct point &p);
 
 bool checkCollision(const struct world *jello, std::vector<pointIndex>& pointInds, std::vector<point>& collidedPoints);
-point computeForce(const struct world *jello, const point& p1, const point& p2, const point& v1, const point& v2, const spring& s);
+point computeForce(double k, double d, double invM, const point& p1, const point& p2, const point& v1, const point& v2, double res_len);
 inline bool inCube(const point& p, const AABB& aabb);
 
 #endif

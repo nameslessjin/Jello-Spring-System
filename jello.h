@@ -30,6 +30,7 @@ extern double Theta;
 extern double Phi;
 extern double R;
 extern bool animate;
+extern float color;
 
 // number of images saved to disk so far
 extern int sprite;

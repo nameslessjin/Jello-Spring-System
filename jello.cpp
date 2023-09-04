@@ -49,6 +49,7 @@ point minP = { minX, minY, minZ };
 point maxP = { maxX, maxY, maxZ };
 bool animate = false;
 bool increasing = true;
+float color = 255.0f;
 
 void performAnimation();
 void generateSprings();
@@ -61,8 +62,8 @@ void myinit()
   glLoadIdentity();
   gluPerspective(90.0,1.0,0.01,1000.0);
 
-  // set background color to grey
-  glClearColor(0.5, 0.5, 0.5, 0.0);
+  // set background color to blue
+  glClearColor(166.0f / color, 205.0f / color, 230.0f / color, 0.0);
 
   glCullFace(GL_BACK);
   glEnable(GL_CULL_FACE);
@@ -221,10 +222,10 @@ void doIdle()
   {
     if (increasing)
     {
-      if (Phi < 0.3) Phi += 0.002;
+      if (Phi < 0.75) Phi += 0.003;
       else increasing = false;
     } else {
-      if (Phi > -0.3) Phi -= 0.002;
+      if (Phi > -0.75) Phi -= 0.003;
       else increasing = true;
     }
   };
