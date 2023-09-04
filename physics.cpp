@@ -110,7 +110,7 @@ point interpolateForceField(const struct world *jello, const point& p, const poi
 
   int resolution = jello->resolution;
 
-  // get neighbor forces
+  // get sourrounding forces
   for (int i = 0; i < 2; ++i)
   {
     for (int j = 0; j < 2; ++j)
@@ -123,7 +123,7 @@ point interpolateForceField(const struct world *jello, const point& p, const poi
     }
   }
 
-  // interpolate neighbor forces
+  // interpolate sourrounding forces
   for (int i = 0; i < 2; ++i)
   {
     for (int j = 0; j < 2; ++j)
