@@ -47,6 +47,8 @@ float maxY = 2.0f, minY = -2.0f;
 float maxZ = 2.0f, minZ = -2.0f;
 point minP = { minX, minY, minZ };
 point maxP = { maxX, maxY, maxZ };
+bool animate = false;
+bool increasing = true;
 
 void performAnimation();
 void generateSprings();
@@ -214,6 +216,19 @@ void display()
 
 void doIdle()
 {
+
+  if (animate)
+  {
+    if (increasing)
+    {
+      if (Phi < 0.3) Phi += 0.002;
+      else increasing = false;
+    } else {
+      if (Phi > -0.3) Phi -= 0.002;
+      else increasing = true;
+    }
+  };
+
   char s[20]="picxxxx.ppm";
   int i;
   

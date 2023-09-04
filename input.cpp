@@ -130,6 +130,20 @@ void keyboardFunc (unsigned char key, int x, int y)
       R += 0.2;
       break;
 
+    case 'r':
+
+      if (!animate)
+      {
+        Theta = 0.0f;
+        Phi = 0.0f;
+        animate = true;
+      } else {
+        Theta = pi / 6;
+        Phi = pi / 6;
+        animate = false;
+      }
+      break;
+
     case ' ':
       saveScreenToFile = 1 - saveScreenToFile;
       break;

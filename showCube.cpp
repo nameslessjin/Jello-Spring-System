@@ -230,62 +230,104 @@ void showCube(struct world * jello)
   glFrontFace(GL_CCW);
 }
 
+inline void pointToglVertex(const point& p)
+{
+  glVertex3f(p.x,p.y,p.z);
+}
+
+inline void pointToglVertex(float x, float y, float z)
+{
+  glVertex3f(x,y,z);
+}
+
 void showBoundingBox(const point& minP, const point& maxP)
 {
   int i,j;
 
-  glColor4f(0.6,0.6,0.6,0);
+  point topLeftBack = {minP.x, maxP.y, minP.z};
+  point topLeftFront = {minP.x, maxP.y, maxP.z};
+  point topRightBack = {maxP.x, maxP.y, minP.z};
+  point topRightFront = {maxP.x, maxP.y, maxP.z};
 
-  glBegin(GL_LINES);
+  point bottomLeftBack = {minP.x, minP.y, minP.z};
+  point bottomLeftFront = {minP.x, minP.y, maxP.z};
+  point bottomRightBack = {maxP.x, minP.y, minP.z};
+  point bottomRightFront = {maxP.x, minP.y, maxP.z};
 
-  // front face
-  for(i=minP.x; i<=maxP.x; i++)
-  {
-    glVertex3f(i,minP.y,minP.z);
-    glVertex3f(i,minP.y,maxP.z);
-  }
-  for(j=minP.z; j<=maxP.z; j++)
-  {
-    glVertex3f(minP.x,minP.y,j);
-    glVertex3f(maxP.x,minP.y,j);
-  }
+  // // create planes, we want the normal point to the center of the box
+  // m_plane[0] = plane{ topLeftBack, topLeftFront, topRightFront }; // top
+  // m_plane[1] = plane{ bottomLeftBack, bottomRightBack, bottomRightFront }; // bottom
+  // m_plane[2] = plane{ topLeftBack, bottomLeftBack, bottomLeftFront }; // left;
+  // m_plane[3] = plane{ topRightBack, topRightFront, bottomRightFront }; // right;
+  // m_plane[4] = plane{ topRightFront, topLeftFront, bottomLeftFront }; // front;
+  // m_plane[5] = plane{ topLeftBack, topRightBack, bottomRightBack }; // back;
+
+  float color = 255.0f; 
+  float scale = 0.2f;
+  glBegin(GL_QUADS);
+
+  // white
+  glColor4f(0.95f,0.95f,0.85f,1.0f);
+
+  // bottom face
+  pointToglVertex(topRightBack);
+  pointToglVertex(topLeftBack);
+  pointToglVertex(bottomLeftBack);
+  pointToglVertex(bottomRightBack);
+
+  // white
+  glColor4f(0.9f,0.9f,0.75f,1.0f);
+
+  // top face
+  pointToglVertex(topRightFront);
+  pointToglVertex(bottomRightFront);
+  pointToglVertex(bottomLeftFront);
+  pointToglVertex(topLeftFront);
+
+  // white
+  glColor4f(0.95f,0.95f,0.8f,1.0f);
 
   // back face
-  for(i=minP.x; i<=maxP.x; i++)
-  {
-    glVertex3f(i,maxP.y,minP.z);
-    glVertex3f(i,maxP.y,maxP.z);
-  }
-  for(j=minP.z; j<=maxP.z; j++)
-  {
-    glVertex3f(minP.x,maxP.y,j);
-    glVertex3f(maxP.x,maxP.y,j);
-  }
+  pointToglVertex(topLeftBack);
+  pointToglVertex(topLeftFront);
+  pointToglVertex(bottomLeftFront);
+  pointToglVertex(bottomLeftBack);
+
+  // green
+  glColor4f(46.0f/color, 204.0f/color, 113.0f/color, 1.0f);
+  // front face
+  pointToglVertex(topRightFront);
+  pointToglVertex(topRightBack);
+  pointToglVertex(bottomRightBack);
+  pointToglVertex(bottomRightFront);
+
+
+  // red
+  glColor4f(231.0f/color, 76.0f/color, 60.0f/color, 1.0f);
 
   // left face
-  for(i=minP.y; i<=maxP.y; i++)
-  {
-    glVertex3f(minP.x,i,minP.z);
-    glVertex3f(minP.x,i,maxP.z);
-  }
-  for(j=minP.z; j<=maxP.z; j++)
-  {
-    glVertex3f(minP.x,minP.y,j);
-    glVertex3f(minP.x,maxP.y,j);
-  }
+  pointToglVertex(bottomRightBack);
+  pointToglVertex(bottomLeftBack);
+  pointToglVertex(bottomLeftFront);
+  pointToglVertex(bottomRightFront);
 
+  // blue
+  glColor4f(52.0f/color,152.0f/color,219.0f/color, 1.0f);
   // right face
-  for(i=minP.y; i<=maxP.y; i++)
-  {
-    glVertex3f(maxP.x,i,minP.z);
-    glVertex3f(maxP.x,i,maxP.z);
-  }
-  for(j=minP.z; j<=maxP.z; j++)
-  {
-    glVertex3f(maxP.x,minP.y,j);
-    glVertex3f(maxP.x,maxP.y,j);
-  }
-  
+  pointToglVertex(topLeftBack);
+  pointToglVertex(topRightBack);
+  pointToglVertex(topRightFront);
+  pointToglVertex(topLeftFront);
+
+  // ceiling light
+  // top face
+  glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+  pointToglVertex(topRightFront.x * scale, topRightFront.y * scale, topRightFront.z - 0.01);
+  pointToglVertex(bottomRightFront.x * scale, bottomRightFront.y * scale, bottomRightFront.z - 0.01);
+  pointToglVertex(bottomLeftFront.x * scale, bottomLeftFront.y * scale, bottomLeftFront.z - 0.01);
+  pointToglVertex(topLeftFront.x * scale, topLeftFront.y * scale, topLeftFront.z - 0.01);
+
+
   glEnd();
 
   return;

@@ -106,6 +106,7 @@ int pic_get_size(char *file, int *nx, int *ny)
     default:
         return FALSE;
   }
+  return FALSE;
 }
 
 /*
@@ -134,6 +135,7 @@ Pic *pic_read(char *file, Pic *opic)
     default:
       return NULL;
     }
+    return NULL;
 }
 
 /*
@@ -160,5 +162,7 @@ int pic_write(char *file, Pic *pic, Pic_file_format format)
       fprintf(stderr, "pic_write: can't write %s, unknown format\n", file);
       return FALSE;
   }
+
+  return TRUE;
 }
 

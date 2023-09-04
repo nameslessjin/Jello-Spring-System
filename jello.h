@@ -29,6 +29,7 @@ struct AABB;
 extern double Theta;
 extern double Phi;
 extern double R;
+extern bool animate;
 
 // number of images saved to disk so far
 extern int sprite;
