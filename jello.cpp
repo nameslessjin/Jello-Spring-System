@@ -63,7 +63,7 @@ void myinit()
   gluPerspective(90.0,1.0,0.01,1000.0);
 
   // set background color to blue
-  glClearColor(166.0f / color, 205.0f / color, 230.0f / color, 0.0);
+  glClearColor(156.0f / color, 197.0f / color, 225.0f / color, 0.0);
 
   glCullFace(GL_BACK);
   glEnable(GL_CULL_FACE);
